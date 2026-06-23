@@ -1,0 +1,10 @@
+asd.txt
+THESIS_MAPPING.md
+README.md
+.venv/
+.vscode/
+__pycache__/
+outputs/
+.env
+.gitignore
+.gitignore
