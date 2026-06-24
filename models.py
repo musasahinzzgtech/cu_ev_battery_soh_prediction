@@ -1,5 +1,3 @@
-# Trains the models and saves the best one.
-
 import os
 
 import joblib
@@ -10,7 +8,6 @@ from sklearn.model_selection import GridSearchCV, cross_val_score
 
 import config
 
-# xgboost needs an extra system library, so import it only if it works
 try:
     from xgboost import XGBRegressor
     hasXgboost = True
@@ -22,7 +19,6 @@ scoring = "neg_root_mean_squared_error"
 
 
 def trainLinear(xTrain, yTrain):
-    # simple linear regression (our baseline)
     model = LinearRegression()
     model.fit(xTrain, yTrain)
     print("Trained Linear Regression")
@@ -30,7 +26,6 @@ def trainLinear(xTrain, yTrain):
 
 
 def trainRandomForest(xTrain, yTrain):
-    # random forest, with a small grid search to find good settings
     paramGrid = {
         "n_estimators": [200, 400],
         "max_depth": [None, 10, 20],
@@ -49,7 +44,6 @@ def trainRandomForest(xTrain, yTrain):
 
 
 def trainXgboost(xTrain, yTrain):
-    # gradient boosting model
     model = XGBRegressor(
         n_estimators=400,
         learning_rate=0.05,
@@ -66,13 +60,11 @@ def trainXgboost(xTrain, yTrain):
 
 
 def cvRmse(model, X, y):
-    # average cross-validation RMSE for a model
     scores = cross_val_score(model, X, y, scoring=scoring, cv=cvFolds, n_jobs=-1)
     return float(-np.mean(scores))
 
 
 def trainAndPickBest(xTrain, yTrain):
-    # train all the models and pick the one with the lowest RMSE
     allModels = {}
     allModels["LinearRegression"] = trainLinear(xTrain, yTrain)
     allModels["RandomForest"] = trainRandomForest(xTrain, yTrain)
@@ -92,7 +84,6 @@ def trainAndPickBest(xTrain, yTrain):
 
 
 def saveArtifacts(model, scaler, featureCols, modelsDir=config.modelsDir):
-    # save the model and the things we need to prepare new data
     os.makedirs(modelsDir, exist_ok=True)
     joblib.dump(model, os.path.join(modelsDir, "model.joblib"))
     prep = {"scaler": scaler, "features": featureCols}

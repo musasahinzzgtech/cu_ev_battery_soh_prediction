@@ -1,9 +1,7 @@
-# Makes the charts we use to look at the data (saved as png files).
-
 import os
 
 import matplotlib
-matplotlib.use("Agg")  # so it works without a screen
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +14,6 @@ sns.set_theme(style="whitegrid", context="paper")
 
 
 def saveFig(fig, savePath, title):
-    # add a title, save the figure and close it
     folder = os.path.dirname(savePath)
     if folder:
         os.makedirs(folder, exist_ok=True)
@@ -28,7 +25,6 @@ def saveFig(fig, savePath, title):
 
 
 def plotFeatureDistributions(df, savePath):
-    # histograms of the target and 3 important columns
     panels = [
         (config.target, "State of Health (%)"),
         ("Total_Charging_Cycles", "Total Charging Cycles"),
@@ -44,7 +40,6 @@ def plotFeatureDistributions(df, savePath):
 
 
 def plotSohBoxplotByChemistry(df, savePath):
-    # box plot of SoH for LFP vs NMC
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.boxplot(
         data=df,
@@ -61,7 +56,6 @@ def plotSohBoxplotByChemistry(df, savePath):
 
 
 def plotTemperatureVsSoh(df, savePath):
-    # scatter of temperature vs SoH, colored by battery type
     fig, ax = plt.subplots(figsize=(9, 6))
     sns.scatterplot(
         data=df,
@@ -90,7 +84,6 @@ def plotTemperatureVsSoh(df, savePath):
 
 
 def plotCorrelationHeatmap(df, savePath):
-    # heatmap of correlations between numeric columns and the target
     numericCols = config.numericFeatures + [config.target]
     corr = df[numericCols].corr()
 
@@ -111,7 +104,6 @@ def plotCorrelationHeatmap(df, savePath):
 
 
 def plotCyclesVsSoh(df, savePath):
-    # scatter of charging cycles vs SoH, colored by battery type
     fig, ax = plt.subplots(figsize=(9, 6))
     sns.scatterplot(
         data=df,
@@ -141,9 +133,7 @@ def plotCyclesVsSoh(df, savePath):
 
 
 def plotArrheniusDegradation(df, savePath):
-    # Arrhenius plot: shows that higher temperature speeds up degradation.
-    # rate = SoH loss per month; ln(rate) vs 1000/T should be roughly a line.
-    gasConstant = 8.314  # J / (mol K)
+    gasConstant = 8.314
     kelvinOffset = 273.15
 
     work = df.copy()
@@ -153,7 +143,6 @@ def plotArrheniusDegradation(df, savePath):
     work["tempKelvin"] = work["Avg_Temperature_C"] + kelvinOffset
     work["invTemp"] = 1.0 / work["tempKelvin"]
 
-    # group temperatures into bins to reduce noise
     work["tempBin"] = pd.cut(work["Avg_Temperature_C"], bins=12)
     grouped = (
         work.groupby("tempBin", observed=True)
@@ -174,7 +163,6 @@ def plotArrheniusDegradation(df, savePath):
         xLine = np.linspace(x.min(), x.max(), 100)
         ax.plot(xLine, slope * xLine + intercept, color="#2c3e50",
                 linewidth=2, label="Arrhenius fit")
-        # slope = -Ea / (1000 * R), so Ea (kJ/mol):
         activationEnergyKj = -slope * gasConstant
         annotation = ("Apparent Ea = " + str(round(activationEnergyKj, 1)) +
                       " kJ/mol\nslope = " + str(round(slope, 3)))
@@ -188,7 +176,6 @@ def plotArrheniusDegradation(df, savePath):
 
 
 def generateAllEda(df, figuresDir):
-    # make all the charts and save them
     os.makedirs(figuresDir, exist_ok=True)
     plotFeatureDistributions(df, os.path.join(figuresDir, "feature_distributions.png"))
     plotSohBoxplotByChemistry(df, os.path.join(figuresDir, "soh_boxplot_by_chemistry.png"))

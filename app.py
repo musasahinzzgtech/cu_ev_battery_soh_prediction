@@ -1,6 +1,3 @@
-# Simple web app (Streamlit) to predict battery health.
-# Run it with:  streamlit run app.py
-
 import os
 import glob
 
@@ -17,7 +14,6 @@ prepPath = os.path.join(config.modelsDir, "prep.joblib")
 
 @st.cache_resource
 def loadModelAndPrep():
-    # load the trained model and the scaler + feature list
     model = joblib.load(modelPath)
     prep = joblib.load(prepPath)
     return model, prep
@@ -25,22 +21,18 @@ def loadModelAndPrep():
 
 @st.cache_data
 def loadDataset():
-    # used to fill the dropdowns and slider ranges
     return pd.read_csv(config.dataPath)
 
 
 def predictSoh(model, prep, inputs):
-    # turn one row of inputs into a prediction
     row = pd.DataFrame([inputs])
     X = preprocessing.makeFeatures(row)
-    # add any missing one-hot columns the model expects, fill them with 0
     X = X.reindex(columns=prep["features"], fill_value=0.0)
     X[config.numericFeatures] = prep["scaler"].transform(X[config.numericFeatures])
     return float(model.predict(X)[0])
 
 
 def showImages(specs):
-    # show a list of (filename, caption) images, skip ones that don't exist
     shown = 0
     for filename, caption in specs:
         path = os.path.join(config.figuresDir, filename)
@@ -60,7 +52,6 @@ st.write(
 
 df = loadDataset()
 
-# stop nicely if the model has not been trained yet
 if not os.path.exists(modelPath) or not os.path.exists(prepPath):
     st.error("Model not found. Please run `python main.py` first to train it.")
     st.stop()

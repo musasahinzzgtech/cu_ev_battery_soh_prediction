@@ -1,5 +1,3 @@
-# Checks how good a model is (numbers + charts).
-
 import os
 
 import matplotlib
@@ -14,7 +12,6 @@ import config
 
 
 def computeMetrics(yTrue, yPred):
-    # MAE, RMSE and R2
     yTrue = np.asarray(yTrue, dtype=float)
     yPred = np.asarray(yPred, dtype=float)
     mae = float(mean_absolute_error(yTrue, yPred))
@@ -24,7 +21,6 @@ def computeMetrics(yTrue, yPred):
 
 
 def getImportances(model, featureNames):
-    # get feature importance from trees, or coefficients from linear models
     if hasattr(model, "feature_importances_"):
         values = np.asarray(model.feature_importances_, dtype=float)
     elif hasattr(model, "coef_"):
@@ -36,7 +32,6 @@ def getImportances(model, featureNames):
 
 
 def plotPredictedVsActual(yTrue, yPred, savePath, modelName="Model"):
-    # scatter of predicted vs actual SoH
     os.makedirs(os.path.dirname(savePath), exist_ok=True)
     yTrue = np.asarray(yTrue, dtype=float)
     yPred = np.asarray(yPred, dtype=float)
@@ -57,7 +52,6 @@ def plotPredictedVsActual(yTrue, yPred, savePath, modelName="Model"):
 
 
 def plotResiduals(yTrue, yPred, savePath, modelName="Model"):
-    # residuals (actual - predicted) vs predicted
     os.makedirs(os.path.dirname(savePath), exist_ok=True)
     yTrue = np.asarray(yTrue, dtype=float)
     yPred = np.asarray(yPred, dtype=float)
@@ -76,14 +70,12 @@ def plotResiduals(yTrue, yPred, savePath, modelName="Model"):
 
 
 def plotFeatureImportance(model, featureNames, savePath, modelName="Model", topN=15):
-    # bar chart of the most important features (chemistry ones in red)
     os.makedirs(os.path.dirname(savePath), exist_ok=True)
     importances = getImportances(model, featureNames)
     if importances is None:
         print("No feature importance for", modelName)
         return
 
-    # print where the chemistry features ended up
     ranked = list(importances.index)
     for driver in config.electroDrivers:
         if driver in ranked:
@@ -105,7 +97,6 @@ def plotFeatureImportance(model, featureNames, savePath, modelName="Model", topN
 
 def evaluateModel(model, xTest, yTest, featureNames, figuresDir=config.figuresDir,
                   modelName="Model"):
-    # predict on the test set, print metrics, and save the charts
     yPred = model.predict(xTest)
     metrics = computeMetrics(yTest, yPred)
     print(modelName, "-> MAE:", round(metrics["MAE"], 4),
@@ -122,6 +113,5 @@ def evaluateModel(model, xTest, yTest, featureNames, figuresDir=config.figuresDi
 
 
 def summarizeMetrics(allMetrics):
-    # make a small table of all the models, sorted by RMSE
     table = pd.DataFrame(allMetrics).T
     return table.sort_values("RMSE")
