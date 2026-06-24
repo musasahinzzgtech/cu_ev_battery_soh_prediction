@@ -130,14 +130,31 @@ with tab3:
         ("_feature_importance.png", "Feature importance"),
     ]
 
-    predFigs = sorted(glob.glob(os.path.join(config.figuresDir, "*_pred_vs_actual.png")))
-    modelSlugs = [os.path.basename(p).replace("_pred_vs_actual.png", "") for p in predFigs]
+    modelTitleMap = {
+        "linearregression": "Linear Regression",
+        "randomforest": "Random Forest",
+        "elasticnet": "Elastic Net",
+        "extratrees": "Extra Trees",
+        "svr": "SVR",
+        "histgradientboosting": "Hist Gradient Boosting",
+        "xgboost": "XGBoost",
+        "catboost": "CatBoost",
+    }
+
+    modelSlugsSet = set()
+    for suffix, _ in figTypes:
+        matched = glob.glob(os.path.join(config.figuresDir, "*" + suffix))
+        for path in matched:
+            filename = os.path.basename(path)
+            if filename.endswith(suffix):
+                modelSlugsSet.add(filename[: -len(suffix)])
+    modelSlugs = sorted(modelSlugsSet)
 
     if not modelSlugs:
         st.info("No performance charts yet. Run `python main.py` first.")
     else:
         for slug in modelSlugs:
-            title = slug.replace("_", " ").title()
+            title = modelTitleMap.get(slug.lower(), slug.replace("_", " ").title())
             with st.expander(title, expanded=False):
                 cols = st.columns(len(figTypes))
                 for col, (suffix, heading) in zip(cols, figTypes):
