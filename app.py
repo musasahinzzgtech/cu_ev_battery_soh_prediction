@@ -123,15 +123,27 @@ with tab2:
 
 with tab3:
     st.subheader("Model performance")
-    found = 0
-    for pattern, heading in [("*_feature_importance.png", "Feature importance"),
-                             ("*_pred_vs_actual.png", "Predicted vs actual"),
-                             ("*_residuals.png", "Residuals")]:
-        matches = sorted(glob.glob(os.path.join(config.figuresDir, pattern)))
-        if matches:
-            st.markdown("**" + heading + "**")
-            for path in matches:
-                st.image(path, caption=os.path.basename(path), use_container_width=True)
-                found += 1
-    if found == 0:
+
+    figTypes = [
+        ("_pred_vs_actual.png", "Predicted vs actual"),
+        ("_residuals.png", "Residuals"),
+        ("_feature_importance.png", "Feature importance"),
+    ]
+
+    predFigs = sorted(glob.glob(os.path.join(config.figuresDir, "*_pred_vs_actual.png")))
+    modelSlugs = [os.path.basename(p).replace("_pred_vs_actual.png", "") for p in predFigs]
+
+    if not modelSlugs:
         st.info("No performance charts yet. Run `python main.py` first.")
+    else:
+        for slug in modelSlugs:
+            title = slug.replace("_", " ").title()
+            with st.expander(title, expanded=False):
+                cols = st.columns(len(figTypes))
+                for col, (suffix, heading) in zip(cols, figTypes):
+                    path = os.path.join(config.figuresDir, slug + suffix)
+                    with col:
+                        if os.path.exists(path):
+                            st.image(path, caption=heading, use_container_width=True)
+                        else:
+                            st.caption(heading + ": n/a")

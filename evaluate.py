@@ -6,6 +6,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.inspection import permutation_importance
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 import config
@@ -20,15 +21,23 @@ def computeMetrics(yTrue, yPred):
     return {"MAE": mae, "RMSE": rmse, "R2": r2}
 
 
-def getImportances(model, featureNames):
+def getImportances(model, featureNames, X=None, y=None):
     if hasattr(model, "feature_importances_"):
         values = np.asarray(model.feature_importances_, dtype=float)
+        method = "native"
     elif hasattr(model, "coef_"):
         values = np.abs(np.asarray(model.coef_, dtype=float)).ravel()
+        method = "native"
+    elif X is not None and y is not None:
+        result = permutation_importance(
+            model, X, y, n_repeats=10, random_state=config.randomState, n_jobs=-1
+        )
+        values = np.asarray(result.importances_mean, dtype=float)
+        method = "permutation"
     else:
-        return None
-    s = pd.Series(values, index=list(featureNames))
-    return s.sort_values(ascending=False)
+        return None, None
+    s = pd.Series(values, index=list(featureNames)).sort_values(ascending=False)
+    return s, method
 
 
 def plotPredictedVsActual(yTrue, yPred, savePath, modelName="Model"):
@@ -69,9 +78,10 @@ def plotResiduals(yTrue, yPred, savePath, modelName="Model"):
     print("Saved figure:", savePath)
 
 
-def plotFeatureImportance(model, featureNames, savePath, modelName="Model", topN=15):
+def plotFeatureImportance(model, featureNames, savePath, modelName="Model", topN=15,
+                          X=None, y=None):
     os.makedirs(os.path.dirname(savePath), exist_ok=True)
-    importances = getImportances(model, featureNames)
+    importances, method = getImportances(model, featureNames, X=X, y=y)
     if importances is None:
         print("No feature importance for", modelName)
         return
@@ -84,15 +94,18 @@ def plotFeatureImportance(model, featureNames, savePath, modelName="Model", topN
     top = importances.head(topN).iloc[::-1]
     colors = ["#c0392b" if f in config.electroDrivers else "#34495e" for f in top.index]
 
+    label = "Importance" if method == "native" else "Permutation Importance (mean)"
+    suffix = "" if method == "native" else " - permutation"
+
     fig, ax = plt.subplots(figsize=(9, 7))
     ax.barh(top.index, top.values, color=colors)
-    ax.set_xlabel("Importance")
-    ax.set_title(modelName + ": Feature Importances\n(chemistry drivers in red)",
+    ax.set_xlabel(label)
+    ax.set_title(modelName + ": Feature Importances" + suffix + "\n(chemistry drivers in red)",
                  fontsize=12, fontweight="bold")
     fig.tight_layout()
     fig.savefig(savePath, dpi=300, bbox_inches="tight")
     plt.close(fig)
-    print("Saved figure:", savePath)
+    print("Saved figure:", savePath, "(" + method + ")")
 
 
 def evaluateModel(model, xTest, yTest, featureNames, figuresDir=config.figuresDir,
@@ -108,7 +121,8 @@ def evaluateModel(model, xTest, yTest, featureNames, figuresDir=config.figuresDi
     plotResiduals(yTest, yPred,
                   os.path.join(figuresDir, slug + "_residuals.png"), modelName)
     plotFeatureImportance(model, featureNames,
-                          os.path.join(figuresDir, slug + "_feature_importance.png"), modelName)
+                          os.path.join(figuresDir, slug + "_feature_importance.png"), modelName,
+                          X=xTest, y=yTest)
     return metrics
 
 
